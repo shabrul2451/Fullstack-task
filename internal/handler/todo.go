@@ -30,7 +30,8 @@ func NewTodo(s service.Todo) TodoHandler {
 
 // CreateRequest is the request parameter for creating a new todo
 type CreateRequest struct {
-	Task string `json:"task" validate:"required"`
+	Task     string `json:"task" validate:"required"`
+	Priority string `json:"priority" validate:"required"`
 }
 
 // @Summary	Create a new todo
@@ -49,7 +50,7 @@ func (t *todoHandler) Create(c echo.Context) error {
 			ResponseError{Errors: []Error{{Code: errors.CodeBadRequest, Message: err.Error()}}})
 	}
 
-	todo, err := t.service.Create(req.Task)
+	todo, err := t.service.Create(req.Task, req.Priority)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
 			ResponseError{Errors: []Error{{Code: errors.CodeInternalServerError, Message: err.Error()}}})
@@ -170,11 +171,21 @@ func (t *todoHandler) Find(c echo.Context) error {
 
 // @Summary	Find all todos
 // @Tags		todos
-// @Success	200	{object}	ResponseData{Data=[]model.Todo}
-// @Failure	500	{object}	ResponseError
+// @Param		task	query		string	false	"Task to search for"
+// @Param		status	query		string	false	"Status of the todo"
+// @Param		sorted	query		string	false	"Sort flag based on priority"
+// @Success	200		{object}	ResponseData{Data=[]model.Todo}
+// @Failure	500		{object}	ResponseError
 // @Router		/todos [get]
 func (t *todoHandler) FindAll(c echo.Context) error {
-	res, err := t.service.FindAll()
+	task := c.QueryParam("task")
+	status := c.QueryParam("status")
+	sortStr := c.QueryParam("sorted")
+	sort := false
+	if sortStr == "true" {
+		sort = true
+	}
+	res, err := t.service.FindAll(task, status, sort)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
 			ResponseError{Errors: []Error{{Code: errors.CodeInternalServerError, Message: err.Error()}}})

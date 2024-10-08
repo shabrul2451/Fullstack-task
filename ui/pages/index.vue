@@ -3,15 +3,24 @@
     <h1>TODOリスト</h1>
     <div v-if="statusMessage" class="status-message">{{ statusMessage }}</div>
     <div class="input-group">
-      <input v-model="newTask" placeholder="新しいタスクを入力" @keyup.enter="addTodo">
-      <button @click="addTodo">追加</button>
+      <input v-model="newTask" placeholder="Enter new task" @keyup.enter="addTodo">
+      <div class="input-dropdown">
+        <select v-model="selectedPriority" >
+          <option disabled value="">Select a task</option>
+          <option v-for="priority in priorities" :key="priority.id" :value="priority.value">
+            {{ priority.value }}
+          </option>
+        </select>
+      </div>
+      <button @click="addTodo">Addition</button>
     </div>
     <div v-if="todos.length > 0">
       <div v-for="todo in todos" :key="todo.ID" class="todo-item">
         <input
-v-if="todo.isEditing" v-model="todo.Task" class="edit-input" @blur="editTodo(todo)"
-          @keyup.enter="editTodo(todo)">
-        <span v-else :class="{ 'done-task': todo.Status === 'done' }" @click="enableEdit(todo)">{{ todo.Task
+            v-if="todo.isEditing" v-model="todo.Task" class="edit-input" @blur="editTodo(todo)"
+            @keyup.enter="editTodo(todo)">
+        <span  v-else :class="{ 'done-task': todo.Status === 'done' }" @click="enableEdit(todo)">{{
+            todo.Task
           }}</span>
         <div class="buttons">
           <button :class="{ 'done': todo.Status === 'done' }" @click="updateStatus(todo)">
@@ -22,7 +31,24 @@ v-if="todo.isEditing" v-model="todo.Task" class="edit-input" @blur="editTodo(tod
       </div>
     </div>
     <div v-else>
-      <p>タスクがありません。</p>
+      <p>There are no tasks.</p>
+    </div>
+
+
+    <h3>Done List</h3>
+<!--    done list-->
+    <div v-if="doneTodos.length > 0">
+      <div v-for="doneTodo in doneTodos" :key="doneTodo.ID" class="todo-item">
+        <input
+            v-if="doneTodo.isEditing" v-model="doneTodo.Task" class="edit-input" @blur="editTodo(doneTodo)"
+            @keyup.enter="editTodo(doneTodo)">
+        <span v-else  @click="enableEdit(doneTodo)">{{
+            doneTodo.Task
+          }}</span>
+      </div>
+    </div>
+    <div v-else>
+      <p>There are no completed tasks.</p>
     </div>
   </div>
 </template>
@@ -33,29 +59,49 @@ export default {
     return {
       newTask: '',
       todos: [],
+      doneTodos: [],
       statusMessage: '',
+      selectedPriority: '',
+      priorities: [
+        { id: 1, value: 'Normal' },
+        { id: 2, value: 'Medium' },
+        { id: 3, value: 'High' },
+      ],
     };
   },
   mounted() {
     this.fetchTodos();
+    this.fetchDoneTodos()
   },
   methods: {
     async fetchTodos() {
       try {
-        const response = await fetch(`/api/v1/todos`, {
-        });
+        const response = await fetch(`/api/v1/todos?sorted=true`, {});
         if (!response.ok) throw new Error(`Failed to get todo list. statusCode: ${response.status}`);
         response.json().then(data => {
           this.todos = data.data;
         });
       } catch (error) {
         console.error(error);
-        this.statusMessage = 'タスクの取得に失敗しました';
+        this.statusMessage = 'Failed to get task';
+      }
+    },
+    async fetchDoneTodos() {
+      try {
+        const response = await fetch(`/api/v1/todos?status=done`, {});
+        if (!response.ok) throw new Error(`Failed to get todo list. statusCode: ${response.status}`);
+        response.json().then(data => {
+          this.doneTodos = data.data;
+          console.log("adasdad", this.todos)
+        });
+      } catch (error) {
+        console.error(error);
+        this.statusMessage = 'Failed to get task';
       }
     },
     async addTodo() {
       if (this.newTask.trim() === '') return;
-
+      if (this.selectedPriority.trim() === '') return;
       try {
         const response = await fetch('/api/v1/todos', {
           method: 'POST',
@@ -64,6 +110,7 @@ export default {
           },
           body: JSON.stringify({
             task: this.newTask,
+            priority: this.selectedPriority,
             Status: 'created'
           })
         });
@@ -73,11 +120,12 @@ export default {
         response.json().then(data => {
           this.todos.push(data.data);
           this.newTask = '';
-          this.statusMessage = 'タスクが追加されました';
+          this.selectedPriority = '';
+          this.statusMessage = 'task added';
         });
       } catch (error) {
         console.error('Error creating todo:', error);
-        this.statusMessage = 'タスクの作成に失敗しました';
+        this.statusMessage = 'Failed to create task';
       }
     },
     enableEdit(todo) {
@@ -99,10 +147,10 @@ export default {
 
         if (!response.ok) throw new Error(`Failed to edit todo. statusCode: ${response.status}`);
 
-        this.statusMessage = 'タスクが編集されました';
+        this.statusMessage = 'Task edited';
       } catch (error) {
         console.error('Error editing todo:', error);
-        this.statusMessage = 'タスクの編集に失敗しました';
+        this.statusMessage = 'Failed to edit task';
       }
     },
     async updateStatus(todo) {
@@ -120,10 +168,11 @@ export default {
         if (!response.ok) throw new Error(`Failed to update todo Status. statusCode: ${response.status}`);
 
         todo.Status = todo.Status === 'done' ? 'created' : 'done';
-        this.statusMessage = 'タスクのステータスが変更されました';
+        this.statusMessage = 'Task status changed';
+        await this.fetchDoneTodos();
       } catch (error) {
         console.error('Error updating todo Status:', error);
-        this.statusMessage = 'ステータスの更新に失敗しました';
+        this.statusMessage = 'Failed to update status';
       }
     },
     async deleteTodo(id) {
@@ -138,10 +187,11 @@ export default {
         if (!response.ok) throw new Error(`Failed to update todo Status. statusCode: ${response.status}`);
 
         this.todos = this.todos.filter(todo => todo.ID !== id);
-        this.statusMessage = 'タスクが削除されました';
+        this.statusMessage = 'Task deleted';
+        await this.fetchDoneTodos()
       } catch (error) {
         console.error('Error deleting todo:', error);
-        this.statusMessage = 'タスクの削除に失敗しました';
+        this.statusMessage = 'Failed to delete task';
       }
     }
   }
@@ -228,5 +278,11 @@ button {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+.input-dropdown {
+  display: flex;
+  padding-right: 5px;
+  border-radius: 8px;
 }
 </style>

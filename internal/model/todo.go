@@ -7,15 +7,17 @@ type Todo struct {
 	ID        int `gorm:"primaryKey"`
 	Task      string
 	Status    Status
+	Priority  int
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
 
 // NewTodo returns a new instance of the todo model.
-func NewTodo(task string) *Todo {
+func NewTodo(task string, priority int) *Todo {
 	return &Todo{
-		Task:   task,
-		Status: Created,
+		Task:     task,
+		Priority: priority,
+		Status:   Created,
 	}
 }
 
@@ -39,6 +41,41 @@ const (
 	// Done is the status for a done task.
 	Done = Status("done")
 )
+
+// Priority is the priority of the task
+type Priority string
+
+const (
+	// Medium is the priority for a medium priority task.
+	Medium = Priority("medium")
+	// Normal is the priority of a normal priority task.
+	Normal = Priority("normal")
+	// High is the priority of a high priority task.
+	High = Priority("high")
+)
+
+// GetPriorityInt is the function that return int corresponding of priority string.
+func GetPriorityInt(priority string) int {
+	switch Priority(priority) {
+	case Medium:
+		return 2
+	case Normal:
+		return 1
+	case High:
+		return 3
+
+	}
+	return -1
+}
+
+// IsValidStatus to validate the status
+func IsValidStatus(status string) bool {
+	switch Status(status) {
+	case Created, Processing, Done:
+		return true
+	}
+	return false
+}
 
 // StatusMap is a map of task status.
 var StatusMap = map[Status]bool{

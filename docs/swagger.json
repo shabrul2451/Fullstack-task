@@ -7,6 +7,9 @@
         "description": "This is a server for fullstack-examination-2024.",
         "title": "fullstack-examination-2024 API",
         "contact": {},
+        "license": {
+            "name": "Apache 2.0"
+        },
         "version": "0.0.1"
     },
     "host": "localhost:8080",
@@ -49,6 +52,26 @@
                     "todos"
                 ],
                 "summary": "Find all todos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task to search for",
+                        "name": "task",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status of the todo",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort flag based on priority",
+                        "name": "sorted",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -292,9 +315,13 @@
         "handler.CreateRequest": {
             "type": "object",
             "required": [
+                "priority",
                 "task"
             ],
             "properties": {
+                "priority": {
+                    "type": "string"
+                },
                 "task": {
                     "type": "string"
                 }
@@ -362,6 +389,9 @@
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "priority": {
                     "type": "integer"
                 },
                 "status": {

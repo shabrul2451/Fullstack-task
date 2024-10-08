@@ -10,6 +10,9 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {},
+        "license": {
+            "name": "Apache 2.0"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -52,6 +55,26 @@ const docTemplate = `{
                     "todos"
                 ],
                 "summary": "Find all todos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task to search for",
+                        "name": "task",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status of the todo",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort flag based on priority",
+                        "name": "sorted",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -295,9 +318,13 @@ const docTemplate = `{
         "handler.CreateRequest": {
             "type": "object",
             "required": [
+                "priority",
                 "task"
             ],
             "properties": {
+                "priority": {
+                    "type": "string"
+                },
                 "task": {
                     "type": "string"
                 }
@@ -365,6 +392,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "priority": {
                     "type": "integer"
                 },
                 "status": {

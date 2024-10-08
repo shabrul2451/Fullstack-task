@@ -2,6 +2,8 @@
 package repository
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/zuu-development/fullstack-examination-2024/internal/model"
 	"gorm.io/gorm"
@@ -13,7 +15,7 @@ type Todo interface {
 	Delete(id int) error
 	Update(t *model.Todo) error
 	Find(id int) (*model.Todo, error)
-	FindAll() ([]*model.Todo, error)
+	FindAll(task string, status string, sort bool) ([]*model.Todo, error)
 }
 
 type todo struct {
@@ -65,11 +67,29 @@ func (td *todo) Find(id int) (*model.Todo, error) {
 	return todo, nil
 }
 
-func (td *todo) FindAll() ([]*model.Todo, error) {
+func (td *todo) FindAll(task string, status string, sort bool) ([]*model.Todo, error) {
 	var todos []*model.Todo
-	err := td.db.Find(&todos).Error
+	query := td.db.Model(&todos)
+
+	if task != "" {
+		query.Where("task LIKE ?", "%"+task+"%")
+	}
+
+	if status != "" {
+		if !model.IsValidStatus(status) {
+			return nil, fmt.Errorf("invalid status: %s", status)
+		}
+		query.Where("status LIKE ?", "%"+status+"%")
+	}
+
+	if sort {
+		query.Order("priority DESC")
+	}
+
+	err := query.Find(&todos).Error
 	if err != nil {
 		return nil, err
 	}
+
 	return todos, nil
 }
